@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #151821;
+      --border: #232634;
+      --accent: #e8ff47;
+      --accent2: #ff6b47;
+      --text: #e8eaf0;
+      --muted: #5a5f75;
+      --green: #47ffa0;
+      --red: #ff4747;
+      --amber: #ffb347;
+      --mono: 'DM Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+
+    header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { display: flex; flex-direction: column; gap: 0.25rem; }
+    .logo-tag { font-size: 0.65rem; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; line-height: 1; color: var(--text); }
+    h1 span { color: var(--accent); }
+
+    .stats { display: flex; gap: 2rem; }
+    .stat { text-align: right; }
+    .stat-val { font-family: var(--display); font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .panel-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 1rem; }
+    .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+    input, select { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: var(--mono); font-size: 0.85rem; padding: 0.55rem 0.75rem; outline: none; transition: border-color 0.15s; }
+    input:focus, select:focus { border-color: var(--accent); }
+    select option { background: var(--bg); }
+
+    .btn { padding: 0.55rem 1.2rem; border: none; border-radius: 3px; font-family: var(--mono); font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .btn-primary { background: var(--accent); color: #0d0f14; letter-spacing: 0.05em; }
+    .btn-primary:hover { background: #f5ff70; transform: translateY(-1px); }
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+    .btn-edit { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+    .btn-edit:hover { background: var(--accent); color: #0d0f14; }
+
+    .toolbar { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; }
+    .toolbar input { flex: 1; }
+    .toolbar select { width: 150px; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    thead tr { background: var(--surface); border-bottom: 2px solid var(--accent); }
+    th { padding: 0.75rem 1rem; text-align: left; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; }
+    th:hover { color: var(--accent); }
+    th .sort-icon { opacity: 0.4; margin-left: 4px; }
+    th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: rgba(232,255,71,0.03); }
+    td { padding: 0.7rem 1rem; vertical-align: middle; }
+
+    .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 2px; font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+    .badge-electronics { background: rgba(71,160,255,0.15); color: #47a0ff; }
+    .badge-clothing    { background: rgba(255,107,71,0.15);  color: var(--accent2); }
+    .badge-food        { background: rgba(71,255,160,0.15);  color: var(--green); }
+    .badge-furniture   { background: rgba(232,255,71,0.15);  color: var(--accent); }
+    .badge-other       { background: rgba(160,160,160,0.15); color: var(--muted); }
+
+    .stock-pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-ok   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-low  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .dot-out  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    .actions { display: flex; gap: 0.4rem; }
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.85rem; }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.3; }
+
+    #toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-family: var(--mono); font-size: 0.8rem; padding: 0.75rem 1.25rem; border-radius: 4px; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 999; }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(13,15,20,0.85); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2rem; width: 420px; max-width: 90vw; }
+    .modal h2 { font-family: var(--display); font-size: 1.2rem; margin-bottom: 1.25rem; color: var(--accent); }
+    .modal .field { margin-bottom: 0.75rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+    .btn-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+    @media (max-width: 700px) {
+      .form-row { grid-template-columns: 1fr 1fr; }
+      .stats { gap: 1rem; }
+      header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo">
+      <span class="logo-tag">▸ IMS v1.0</span>
+      <h1>INVEN<span>TORY</span></h1>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-label">Products</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statValue">$0</div>
+        <div class="stat-label">Total Value</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statLow" style="color:var(--amber)">0</div>
+        <div class="stat-label">Low Stock</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <div class="panel-title">// Add New Product</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Product Name</label>
+        <input type="text" id="inName" placeholder="e.g. Wireless Headphones"/>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="inCategory">
+          <option value="electronics">Electronics</option>
+          <option value="clothing">Clothing</option>
+          <option value="food">Food</option>
+          <option value="furniture">Furniture</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Price ($)</label>
+        <input type="number" id="inPrice" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input type="number" id="inQty" placeholder="0" min="0"/>
+      </div>
+      <button class="btn btn-primary" onclick="addProduct()">+ ADD</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="Search products..." oninput="renderTable()"/>
+    <select id="filterCategory" onchange="renderTable()">
+      <option value="">All Categories</option>
+      <option value="electronics">Electronics</option>
+      <option value="clothing">Clothing</option>
+      <option value="food">Food</option>
+      <option value="furniture">Furniture</option>
+      <option value="other">Other</option>
+    </select>
+    <select id="filterStock" onchange="renderTable()">
+      <option value="">All Stock</option>
+      <option value="ok">In Stock</option>
+      <option value="low">Low Stock</option>
+      <option value="out">Out of Stock</option>
+    </select>
+  </div>
+
+  <div class="panel" style="padding:0; overflow:hidden;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('id')">#<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('name')">Product<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('category')">Category<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('price')">Price<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('qty')">Stock<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('value')">Value<span class="sort-icon">↕</span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="icon">📦</div>
+        <div>No products found</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>// Edit Product</h2>
+    <input type="hidden" id="editId"/>
+    <div class="field"><label>Product Name</label><input type="text" id="editName"/></div>
+    <div class="field"><label>Category</label>
+      <select id="editCategory">
+        <option value="electronics">Electronics</option>
+        <option value="clothing">Clothing</option>
+        <option value="food">Food</option>
+        <option value="furniture">Furniture</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Price ($)</label><input type="number" id="editPrice" min="0" step="0.01"/></div>
+    <div class="field"><label>Quantity</label><input type="number" id="editQty" min="0"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let products = JSON.parse(localStorage.getItem('ims_products') || '[]');
+  let nextId = parseInt(localStorage.getItem('ims_nextId') || '1');
+  let sortKey = 'id', sortDir = 1;
+
+  if (products.length === 0) {
+    const seeds = [
+      { name: 'Wireless Headphones', category: 'electronics', price: 79.99,  qty: 45 },
+      { name: 'Cotton T-Shirt',      category: 'clothing',    price: 19.99,  qty: 8  },
+      { name: 'Organic Coffee Beans',category: 'food',        price: 14.50,  qty: 120},
+      { name: 'Standing Desk',       category: 'furniture',   price: 349.00, qty: 0  },
+      { name: 'USB-C Hub',           category: 'electronics', price: 44.99,  qty: 3  },
+    ];
+    seeds.forEach(s => { products.push({ id: nextId++, ...s }); });
+    save();
+  }
+
+  function save() {
+    localStorage.setItem('ims_products', JSON.stringify(products));
+    localStorage.setItem('ims_nextId', nextId);
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function addProduct() {
+    const name = document.getElementById('inName').value.trim();
+    const category = document.getElementById('inCategory').value;
+    const price = parseFloat(document.getElementById('inPrice').value);
+    const qty = parseInt(document.getElementById('inQty').value);
+    if (!name) { toast('⚠ Product name required'); return; }
+    if (isNaN(price) || price < 0) { toast('⚠ Enter a valid price'); return; }
+    if (isNaN(qty) || qty < 0) { toast('⚠ Enter a valid quantity'); return; }
+    products.push({ id: nextId++, name, category, price, qty });
+    save(); renderTable(); updateStats();
+    document.getElementById('inName').value = '';
+    document.getElementById('inPrice').value = '';
+    document.getElementById('inQty').value = '';
+    toast('✓ Product added');
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    products = products.filter(p => p.id !== id);
+    save(); renderTable(); updateStats();
+    toast('✓ Product deleted');
+  }
+
+  function openEdit(id) {
+    const p = products.find(x => x.id === id);
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = p.name;
+    document.getElementById('editCategory').value = p.category;
+    document.getElementById('editPrice').value = p.price;
+    document.getElementById('editQty').value = p.qty;
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+
+  function saveEdit() {
+    const id = parseInt(document.getElementById('editId').value);
+    const name = document.getElementById('editName').value.trim();
+    const category = document.getElementById('editCategory').value;
+    const price = parseFloat(document.getElementById('editPrice').value);
+    const qty = parseInt(document.getElementById('editQty').value);
+    if (!name || isNaN(price) || isNaN(qty)) { toast('⚠ Fill all fields'); return; }
+    const p = products.find(x => x.id === id);
+    Object.assign(p, { name, category, price, qty });
+    save(); renderTable(); updateStats(); closeModal();
+    toast('✓ Product updated');
+  }
+
+  function stockStatus(qty) {
+    if (qty === 0)  return { label: 'Out of Stock', cls: 'out' };
+    if (qty <= 10)  return { label: `${qty} units`, cls: 'low' };
+    return { label: `${qty} units`, cls: 'ok' };
+  }
+
+  function sortBy(key) {
+    if (sortKey === key) sortDir *= -1;
+    else { sortKey = key; sortDir = 1; }
+    renderTable();
+  }
+
+  function renderTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const catFilter = document.getElementById('filterCategory').value;
+    const stockFilter = document.getElementById('filterStock').value;
+
+    let data = products.filter(p => {
+      const matchSearch = p.name.toLowerCase().includes(search) || p.category.includes(search);
+      const matchCat = !catFilter || p.category === catFilter;
+      const st = stockStatus(p.qty).cls;
+      const matchStock = !stockFilter || st === stockFilter;
+      return matchSearch && matchCat && matchStock;
+    });
+
+    data = data.sort((a, b) => {
+      let va = sortKey === 'value' ? a.price * a.qty : a[sortKey];
+      let vb = sortKey === 'value' ? b.price * b.qty : b[sortKey];
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
+    });
+
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+    } else {
+      document.getElementById('emptyState').style.display = 'none';
+      data.forEach(p => {
+        const st = stockStatus(p.qty);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="color:var(--muted); font-size:0.75rem">#${String(p.id).padStart(3,'0')}</td>
+          <td style="font-weight:500">${p.name}</td>
+          <td><span class="badge badge-${p.category}">${p.category}</span></td>
+          <td>$${p.price.toFixed(2)}</td>
+          <td><span class="stock-pill"><span class="dot dot-${st.cls}"></span>${st.label}</span></td>
+          <td style="color:var(--accent)">$${(p.price * p.qty).toFixed(2)}</td>
+          <td><div class="actions">
+            <button class="btn btn-edit" onclick="openEdit(${p.id})">Edit</button>
+            <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Del</button>
+          </div></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = products.length;
+    const total = products.reduce((s, p) => s + p.price * p.qty, 0);
+    document.getElementById('statValue').textContent = '$' + total.toLocaleString('en', {minimumFractionDigits:0, maximumFractionDigits:0});
+    document.getElementById('statLow').textContent = products.filter(p => p.qty > 0 && p.qty <= 10).length;
+  }
+
+  document.getElementById('editModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  renderTable();
+</script>
+</body>
+</html>
