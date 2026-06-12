@@ -1,1 +1,1 @@
-# my-website
+# Kingsprime tech.github.io
